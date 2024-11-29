@@ -32,12 +32,7 @@ api_secret = os.getenv("BINANCE_API_SECRET")
 
 client = Client(api_key = api_key, api_secret = api_secret, tld = "com", testnet = False) # Mainnet!!!
 
-## Variables for method testing
-now = datetime.utcnow()
-historical_days = 10
-past = str(now - timedelta(days= historical_days))
-symbol = "BTCUSDT"
-bar_length = "1m"
+
 
 
 ## Kline, commonly known as Candlestick, which packs a lot of trade history information into a single data point.
@@ -58,20 +53,36 @@ def fetch_data(symbol, interval, start, end):
 
 
 
-df = fetch_data(symbol, bar_length, past, str(now))
-
-
-df
 
 
 ## Calculating the simple moving averages of the closing prices
-def calculateSMAs(df: pd.DataFrame, short_window: int, long_window: int, period: int):
+def calculate_SMAs(df: pd.DataFrame, short_window: int, long_window: int, period: int):
     # Create short and long length simple moving average column
     df[f'{short_window}_SMA'] = df['Close'].rolling(window = short_window, min_periods = period).mean()
     df[f'{long_window}_SMA'] = df['Close'].rolling(window = long_window, min_periods = period).mean()
     return df
 
-dfa = calculateSMAs(df, 20, 50, 1)
+
+
+
+def SMA_signals(df: pd.DataFrame, short_window: int, long_window: int):
+    # create a new column 'Signal' such that if 20-length SMA is greater than 50-length SMA then set Signal as 1 else 0.
+
+    df['Signal'] = 0.0  
+    df['Signal'] = np.where(df[f'{short_window}_SMA'] > df[f'{long_window}_SMA'], 1.0, 0.0) 
+
+    # create a new column 'Position' which is a day-to-day difference of the 'Signal' column. 
+    df['Position'] = df['Signal'].diff()
+    # Note that Position = 1 indicates a 'buy' call and Position = -1 indicates 'sell' call
+    
+    df[df['Position'] == -1]
+    #  Position = -1 indicates 'sell' call
+    
+    df[df['Position'] == 1]
+    #  Position = 1 indicates a 'buy' call
+
+    return df
+
 
 
 
